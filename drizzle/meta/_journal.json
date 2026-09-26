@@ -1,0 +1,118 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1786113292425,
+      "tag": "0000_curious_maestro",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786113315520,
+      "tag": "0001_enable_rls_deny_all",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786144388135,
+      "tag": "0002_tense_la_nuit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786144403814,
+      "tag": "0003_slot_overlap_exclusion_and_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786151602395,
+      "tag": "0004_goofy_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786151619495,
+      "tag": "0005_cuddly_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786151631928,
+      "tag": "0006_availability_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786163502868,
+      "tag": "0007_married_doorman",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786163521825,
+      "tag": "0008_confirmed_booking_exclusion",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786164334499,
+      "tag": "0009_expiry_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786200000000,
+      "tag": "0010_fix_expiry_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786263849036,
+      "tag": "0011_conscious_mathemanic",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786455073137,
+      "tag": "0012_dazzling_nemesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786718817649,
+      "tag": "0013_stiff_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786750846919,
+      "tag": "0014_smart_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786834052921,
+      "tag": "0015_melodic_white_tiger",
+      "breakpoints": true
+    }
+  ]
+}

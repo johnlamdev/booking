@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/*
+ * 顏色以語意命名，避免在 component 裡散落 hex。
+ * 狀態一律「顏色 + 文字」雙重表達，不可只靠顏色分辨（規格 §13.4）。
+ */
+@theme {
+  --color-canvas: #f6f8f7;
+  --color-surface: #ffffff;
+  --color-ink: #17211d;
+  --color-ink-muted: #52615a;
+  --color-ink-subtle: #758079;
+  --color-line: #dfe6e2;
+  --color-brand: #1e7a5c;
+  --color-brand-strong: #145b44;
+  --color-brand-soft: #e8f4ee;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-notice: #1d4ed8;
+  --color-notice-soft: #eff6ff;
+
+  /* 繁體中文優先的系統字型堆疊，避免中英文混排時字重不一致 */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC',
+    'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+  /* iOS Safari 橫置時不放大字體 */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% -10%, rgb(30 122 92 / 8%), transparent 30rem),
+    linear-gradient(to bottom, #fbfcfb, var(--color-canvas) 24rem);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 鍵盤操作必須看得見焦點（規格 §13.4） */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

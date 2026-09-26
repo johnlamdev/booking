@@ -1,0 +1,26 @@
+# 整合測試專用的 Postgres。
+#
+# 刻意使用乾淨的官方 postgres image 而非 Supabase stack：我們的 schema 不依賴
+# 任何 Supabase 專有物件（見 docs/DESIGN.md §2.3），所以這樣就足夠，且 CI 上
+# 可直接用同一個 image 作 service container。
+#
+# port 54329 避開常見的本機 5432，減少撞埠機會。
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: booking-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: booking_test
+    ports:
+      - '54329:5432'
+    # 測試資料無需持久化，用 tmpfs 換取速度
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d booking_test']
+      interval: 2s
+      timeout: 3s
+      retries: 20
