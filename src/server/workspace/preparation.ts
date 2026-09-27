@@ -27,6 +27,6 @@ export async function prepareWorkspaceAction(): Promise<WorkspacePreparationStat
       `[perf] workspace prepare result=error total_ms=${Math.round(performance.now() - startedAt)}`,
     )
     console.error('[workspace] preparing failed', error instanceof Error ? error.message : 'unknown')
-    return { error: '暫時未能準備測試工作室，請按下方按鈕重試。' }
+    return { error: '暫時未能準備工作空間，請按下方按鈕重試。' }
   }
 }

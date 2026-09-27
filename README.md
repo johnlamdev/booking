@@ -1,103 +1,130 @@
 # 約課易
 
-約課易是給獨立老師使用的預約查詢 SaaS。老師分享自己的公開預約頁，學生毋須註冊，選擇時段並留下姓名及 WhatsApp 號碼；老師確認後，課堂才正式成立。
+約課易是一個公開 Beta、可自行安裝的預約查詢網站，適合獨立老師使用。老師設定課堂和可預約時間，分享專屬連結給學生；學生毋須建立帳號，選擇時段並留下姓名及 WhatsApp 號碼。老師確認後，課堂才正式成立。**學生送出的是查詢，並非即時預約；待確認查詢不會佔用時段。**
 
-> **查詢不等於預約。** `PENDING` 不會佔用時段，只有 `CONFIRMED` 才會佔用老師時間。
+這個 repository 的原始碼公開，供有興趣的人了解及自行安裝。每位自行部署者需要自己的 Supabase 專案儲存資料，以及自己的網站部署平台。
 
-目前為封閉測試版本。部署時請自行設定環境變數及網域。
+## Hosted Version（使用已部署的網站）
 
-## 目前產品範圍
+如果有人提供你已部署的約課易網址，直接開啟網站，按「免費建立預約頁」，以自己的電郵註冊並確認電郵。首次登入後，跟隨首頁引導檢查老師資料、課堂種類及開放時間，預覽預約頁，再把連結分享給學生。忘記密碼可在登入頁申請重設連結。
 
-- 一對一私人課；暫不包括小組班、付款、套票、等候名單或外部日曆同步。
-- 老師可設定公開資料、服務、每週開放時間、指定日期休假及公開頁網址。
-- 新 workspace 預設建立「60 分鐘私人課」、每天 `09:00–21:00` 開放、60 分鐘起始間隔、最少提前 120 分鐘及 60 天預約範圍，並立即發佈公開頁。
-- 學生只需姓名及 WhatsApp 號碼，可選填備註；不需帳號、email 或額外同意 checkbox。
-- 老師在查詢頁使用「確認／拒絕／回覆」三個主要操作；可先修改範本，再開啟 WhatsApp 傳送。
-- 確認一個查詢後，同時段或重疊時間的其他待處理查詢會標記為時段衝突。
-- 已設為不開放的日期會顯示紅色警告，server 亦會阻止確認；已有課堂則保留並清楚提示。
-- 老師可新增、修改、搜尋及封存學生，並查看每位學生的約堂紀錄。
-- 日曆可由學生名冊選擇「姓名＋WhatsApp」代學生新增課堂。
-- 今日頁提供未來 7 天摘要；點選某日或日曆項目會聚焦該日／該筆記錄。
+**本 repository 未提供官方 Hosted Version 網址。** 如果你只拿到 GitHub 連結，請按下面的 Self-hosting 步驟建立自己的網站。不要把測試帳號或示範學生資料用於正式預約。
 
-## 邀請測試模式
+## Self-hosting（自行安裝）
 
-公開註冊與忘記密碼預設關閉。測試帳號必須由管理員建立，並在 Supabase `app_metadata` 設定：
+- **先在自己電腦試用：** 跟隨下面「第一次安裝」。網站只在你的電腦運行，網址是 `http://localhost:3100`。
+- **建立公開網站：** 完成本機安裝和測試，再跟隨「放上互聯網」。公開網站需要另外設定網址、電郵發送和部署平台。
 
-```json
-{ "booking_access": "tester" }
-```
+安裝過程會用到「終端機」：Mac 的「終端機」或 Windows 的 PowerShell。灰色程式碼框內的指令要逐行貼到終端機執行。以 `#` 開頭的文字是說明，不用輸入。
 
-建立單一測試老師：
+## 第一次安裝（在自己電腦試用）
 
-```bash
-set -a
-source .env.local
-set +a
-pnpm test-teacher:create
-```
+### 1. 準備帳號和工具
 
-腳本會讀取 `TEST_TEACHER_EMAIL` 與 `TEST_TEACHER_PASSWORD`，建立 Auth 帳號後立即預先建立 workspace、預設服務、開放時間及 12 位固定測試學生，但不會在輸出顯示密碼。重複執行會沿用既有帳號及 workspace。帳號密碼只應透過安全渠道交付，不應寫進 repository。
+1. 建立一個 [Supabase 帳號](https://supabase.com/)；稍後會用它建立獨立資料庫和登入系統。
+2. 安裝 [Node.js 22 或更新的 LTS 版本](https://nodejs.org/)。安裝後重新開啟終端機，輸入 `node --version`，應看到 `v22` 或更高版本。
+3. 在終端機輸入 `corepack enable`，然後輸入 `pnpm --version`。本專案使用 pnpm 10；如果版本不符，可輸入 `corepack prepare pnpm@10.15.1 --activate` 再檢查。
+4. 下載本 repository：在 GitHub 頁面按 **Code → Download ZIP**，解壓縮後，把資料夾放在你容易找到的位置。你也可以用 Git clone。
+5. 在終端機進入解壓後、含有 `package.json` 的 `booking` 資料夾。例如把資料夾拖到終端機可取得它的完整路徑，然後輸入 `cd ` 加上該路徑。其後的指令都在這個資料夾執行。
 
-老師**首次進入後台**時會先看到準備畫面；系統在獨立 request 以當日為基準批次建立 `tester-v1` 的相對日期資料，完成後自動進入 dashboard。因此邀請日期與首次登入日期可以不同，也不會令登入頁或第一個 dashboard 回應長時間空白。資料包括：
+Windows PowerShell 如執行 `corepack enable` 出現權限錯誤，請以系統管理員身分開啟 PowerShell 再執行該指令。
 
-- 12 位清楚標示「【測試】」的學生；每位有 1–10 筆紀錄。
-- 合共 74 筆體驗紀錄，包括 20 筆未來 7 天的待處理查詢（每天 1–5 筆）、30 筆未來 14 天的已確認課堂，以及過往已確認、取消、拒絕與衝突紀錄。
-- 同一時段查詢、與已確認課堂重疊的查詢，以及首次登入後第 3 天「不開放但仍有記錄」的情境。
-- 示範學生各有不同的假電話；所有 WhatsApp 動作實際改送到 `TEST_WHATSAPP_OVERRIDE_NUMBER`。未設定時，WhatsApp 傳送按鈕會安全停用。
+### 2. 建立 Supabase 專案
 
-相對日期資料只建立一次；HTML 與 RSC request 同時抵達亦會由 transaction lock 防止重複。現有測試帳號如需重置，應由管理員使用專用維護流程處理，不要直接刪改 production 資料表。
+1. 登入 [Supabase Dashboard](https://supabase.com/dashboard)，建立新 project。妥善保存你設定的**資料庫密碼**。
+2. 開啟該 project，按上方 **Connect**，分別複製：
+   - **Transaction pooler** 連線字串，放進稍後的 `DATABASE_URL`（通常使用 port `6543`）。
+   - **Session pooler** 連線字串，放進 `DIRECT_DATABASE_URL`（通常使用 port `5432`）。若你的網絡支援 IPv6，也可使用 **Direct connection**。不要把兩條字串互換。
+3. 連線字串中的 `[YOUR-PASSWORD]` 要換成你剛才設定的資料庫密碼。若密碼含 `@`、`#`、`&` 等符號，需先做 URL 編碼；最簡單的做法是在建立專案時使用不含這些符號的強密碼。
+4. 在 project 的 **Settings → API Keys** 找出 project URL 和 **publishable key**。程式的變數名稱仍叫 `ANON_KEY`，可填入 publishable key；舊版頁面上的 `anon` key 亦可使用。只有管理員要建立 demo 帳號時，才需要另外取得 **secret key**，填入 `SUPABASE_SERVICE_ROLE_KEY`。
 
-## 技術棧
+Supabase 的畫面可能改版；如找不到上述項目，請參考其[資料庫連線說明](https://supabase.com/docs/guides/database/connecting-to-postgres)及 [API Keys 說明](https://supabase.com/docs/guides/getting-started/api-keys)。
 
-| 範疇 | 選擇 |
-|---|---|
-| Web | Next.js 16 App Router、React 19、TypeScript strict |
-| UI | Tailwind CSS v4、自建輕量元件、mobile-first |
-| Database | Supabase Postgres |
-| Data access | Drizzle ORM + postgres.js |
-| Auth | Supabase Auth（email + password） |
-| Hosting | 支援 Next.js 的部署平台 |
-| Tests | Vitest、Docker Postgres、Playwright |
+### 3. 填寫設定檔
 
-## 本機開發
-
-需求：Node.js 22+、pnpm 10+、Supabase 專案；只有整合測試需要 Docker。
+在 `booking` 資料夾執行：
 
 ```bash
 pnpm install
 cp .env.example .env.local
-pnpm dev
 ```
 
-本機固定使用 [http://localhost:3100](http://localhost:3100)。`NEXT_PUBLIC_APP_URL` 必須與實際網址一致，否則產生的學生狀態連結會錯誤。
+Windows PowerShell 複製檔案的指令是 `Copy-Item .env.example .env.local`。
 
-### 資料庫
+用文字編輯器打開 `.env.local`，在等號後填入你自己的值。首次本機安裝要填這四項，**不要加引號**：
 
-Runtime 的 `DATABASE_URL` 使用 Supabase transaction pooler（port 6543）；migration 的 `DIRECT_DATABASE_URL` 使用 direct connection 或 session pooler（port 5432）。
+| 設定 | 填入甚麼 |
+|---|---|
+| `DATABASE_URL` | Supabase 的 Transaction pooler 連線字串 |
+| `DIRECT_DATABASE_URL` | Supabase 的 Session pooler 或 Direct connection 連線字串 |
+| `NEXT_PUBLIC_SUPABASE_URL` | 你的 Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 你的 publishable（或 legacy anon）key |
+
+保留 `NEXT_PUBLIC_APP_URL=http://localhost:3100`，並確認以下三項是 `true`、`true`、`false`：
+
+```dotenv
+PUBLIC_SIGNUP_ENABLED=true
+PASSWORD_RESET_ENABLED=true
+INVITE_TESTING_MODE=false
+```
+
+這三項讓使用者自行註冊、重設密碼，並建立正常的老師工作空間。正式帳號只會取得預設課堂及開放時間，不會收到測試學生或預約紀錄。不要把 `.env.local` 上傳到 GitHub、傳給其他人，或貼在公開求助訊息中。
+
+### 4. 建立資料表，啟動網站
+
+依次執行：
 
 ```bash
 pnpm db:migrate
-pnpm db:generate
+pnpm dev
 ```
 
-Migration 全部位於 `drizzle/` 並進版控。不要手動修改 production schema。
+第一個指令會在**你填入的 Supabase project** 建立所需資料表；執行前請再確認 `DIRECT_DATABASE_URL` 指向你自己的新 project。看到 migration 完成且沒有錯誤後，第二個指令會啟動網站。打開 [http://localhost:3100](http://localhost:3100)，按「免費建立預約頁」，以自己的電郵地址註冊。登入後可在設定頁修改老師資料、課堂和開放時間。要停止本機網站，在終端機按 `Ctrl + C`。
 
-所有業務資料表均啟用 RLS，且刻意不建立 browser policy（deny-all）。瀏覽器的 anon/authenticated key 無法直接讀取業務資料；所有操作經 server 端並檢查 active workspace membership。
+本機試用如註冊時無法收到確認電郵，請先用 Supabase project 擁有者的電郵地址測試。Supabase 預設郵件服務只寄給 project 團隊成員；供其他人註冊之前，必須設定自己的 SMTP 郵件服務。
 
-## 環境變數
+## 放上互聯網（以 Vercel 為例）
 
-完整說明見 [.env.example](.env.example)。主要類別如下：
+公開網站需要 [GitHub](https://github.com/)、[Vercel](https://vercel.com/) 和 Supabase 帳號。以下步驟假設你已完成上面的本機安裝，而且 `pnpm db:migrate` 成功。
 
-- 資料庫：`DATABASE_URL`、`DIRECT_DATABASE_URL`
-- Supabase：`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`
-- App：`NEXT_PUBLIC_APP_URL`、`RATE_LIMIT_IP_HEADER`
-- 封閉測試：`PUBLIC_SIGNUP_ENABLED`、`PASSWORD_RESET_ENABLED`、`INVITE_TESTING_MODE`、`TEST_WHATSAPP_OVERRIDE_NUMBER`
-- 建立測試老師：`TEST_TEACHER_EMAIL`、`TEST_TEACHER_PASSWORD`
-- E2E：`E2E_TEST_TEACHER_EMAIL`、`E2E_TEST_TEACHER_PASSWORD`、`E2E_TEST_WORKSPACE_SLUG`、`TEST_DATABASE_URL`
+1. 在 [本 repository](https://github.com/johnlamdev/booking) 按 **Fork**，建立你自己的副本。不要把 `.env.local` 加進 GitHub。
+2. 在 Vercel 建立新 project，匯入你 fork 的 repository。Framework 選 **Next.js**。Vercel 會安裝依賴並執行 build；**部署不會代你執行資料庫 migration**，所以前面的本機步驟不能省略。
+3. 在 Vercel 的 project **Environment Variables** 填入 `DATABASE_URL`、`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`，以及 `PUBLIC_SIGNUP_ENABLED=true`、`PASSWORD_RESET_ENABLED=true`、`INVITE_TESTING_MODE=false`。`DIRECT_DATABASE_URL` 只供本機執行 migration 使用；如要在其他地方執行 migration，才在那個安全環境設定它。一般公開網站不需要 `SUPABASE_SERVICE_ROLE_KEY`；它只供本機管理員 demo 建立腳本使用。
+4. 第一次部署後，複製 Vercel 給你的正式網址（例如 `https://你的專案.vercel.app`），把 Vercel 的 `NEXT_PUBLIC_APP_URL` 設成該網址，**不加最後的 `/`**，然後重新部署。若稍後改用自訂網域，也要同步更新並重新部署。
+5. 在 Supabase 的 **Authentication → URL Configuration**，把 **Site URL** 設成相同的正式網址，並把 `https://你的正式網址/auth/callback` 加入允許的 redirect URLs。地址要按你的真實網域填寫。
+6. 在 Supabase 設定[自訂 SMTP 郵件服務](https://supabase.com/docs/guides/auth/auth-smtp)，再用**非 project 團隊成員**的電郵測試註冊、確認信及忘記密碼。預設郵件服務不能用於公開註冊。
+7. 用老師帳號建立並分享預約頁，找另一人測試送出查詢、確認及開啟 WhatsApp。WhatsApp 只會預填訊息；老師仍須親自在 WhatsApp 按「傳送」。
 
-切勿提交 `.env.local`、database password、Supabase Service Role Key 或測試帳號密碼。
+測試／demo 帳號由管理員在本機 `.env.local` 填入 `SUPABASE_SERVICE_ROLE_KEY`、`TEST_TEACHER_EMAIL`、`TEST_TEACHER_PASSWORD`，再執行 `pnpm test-teacher:create` 建立，須使用**與正式老師不同的電郵**。腳本會標記獨立的體驗工作空間，測試資料及 WhatsApp 轉送只適用該工作空間。一般公開註冊不會產生測試資料。`INVITE_TESTING_MODE=true` 只供刻意關閉一般帳號進入後台的私有邀請環境使用；公開 Beta 應保持 `false`。
 
-## 驗證
+公開網站會收集學生姓名和 WhatsApp 號碼。正式對外收集資料前，請自行準備適合所在地及用途的私隱告知、資料保留和刪除安排。本專案目前未提供完整的帳號刪除與資料保留流程。
+
+## 遇到問題
+
+| 情況 | 先檢查甚麼 |
+|---|---|
+| `node` 或 `pnpm` 找不到 | 重新開啟終端機，檢查 Node 安裝和 `corepack enable` |
+| `pnpm db:migrate` 無法連線 | `DIRECT_DATABASE_URL` 是否完整、密碼是否已代入、是否用了 port `5432` 的連線方式 |
+| 網站顯示缺少環境變數 | `.env.local` 是否在 `package.json` 同一資料夾；修改後重新執行 `pnpm dev` |
+| 註冊後無法進入後台 | 檢查 `PUBLIC_SIGNUP_ENABLED=true` 和 `INVITE_TESTING_MODE=false`，然後重啟或重新部署 |
+| 收不到確認或重設電郵 | 檢查 Supabase 的 SMTP、垃圾郵件匣及 Auth URL Configuration |
+| 學生收到錯誤網址 | `NEXT_PUBLIC_APP_URL` 是否等於正在使用的網站網址，更新後重新部署 |
+
+回報問題時請附上你執行的步驟和**遮去密碼、連線字串及 key** 後的錯誤訊息。
+
+## 功能與限制
+
+- 老師可設定公開資料、服務、每週開放時間、指定日期休假，並管理查詢、課堂和學生名冊。
+- 新帳號會建立預設的 60 分鐘私人課和開放時間；老師可自行修改。
+- 同一時段可以收到多個待確認查詢。確認其中一個後，其他重疊查詢會顯示衝突。
+- 目前以一對一私人課為主；沒有內建付款、套票、小組班、等候名單或外部日曆同步。
+- 系統不會自動傳送 WhatsApp 或 email 給學生。
+
+## 開發者參考
+
+技術棧：Next.js 16、React 19、TypeScript、Tailwind CSS、Supabase Postgres/Auth、Drizzle ORM。資料庫 migration 位於 `drizzle/`。只有修改資料庫 schema 時才需要 `pnpm db:generate`；一般安裝只執行 `pnpm db:migrate`。
+
+其他環境變數及測試設定見 [`.env.example`](.env.example)。`RATE_LIMIT_IP_HEADER` 用於公開 endpoint 的 IP 限流；部署時應填寫平台覆寫、訪客不能自行控制的 client IP header 名稱。未設定時，production 所有訪客會共用同一個限流額度，可能令正常查詢被限制。不要未經核實就填入任意 header。
 
 ```bash
 pnpm test
@@ -106,24 +133,4 @@ pnpm lint
 pnpm build
 ```
 
-整合測試使用獨立 Docker Postgres，並有防護避免誤連 Supabase：
-
-```bash
-pnpm test:db:up
-pnpm test:integration
-pnpm test:db:down
-```
-
-完整 E2E：
-
-```bash
-pnpm test:e2e
-```
-
-## 已知限制
-
-- 系統不會自動發送 WhatsApp 或 email。WhatsApp 只會開啟 Click-to-Chat 並預填訊息，老師仍需在 WhatsApp 內按傳送。
-- 封閉測試期不提供自行註冊或忘記密碼；帳號與密碼由管理員提供及處理。
-- 資料保留、帳號刪除及正式私隱政策尚待產品決定。
-- 過期狀態在畫面上會按時間正確推導；`reconcile_expired_inquiries()` 可另以 Supabase `pg_cron` 定期實體化及清理限流紀錄。
-- 測試 WhatsApp 統一轉送只適用 `is_experience` workspace；正式帳號必須使用學生的真實 WhatsApp 號碼。
+整合測試另需 Docker；相關指令可在 `package.json` 查看。

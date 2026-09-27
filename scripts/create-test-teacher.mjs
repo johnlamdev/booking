@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { config as loadEnv } from 'dotenv'
 
 import { provisionTestWorkspace } from './lib/provision-test-workspace.mjs'
+
+loadEnv({ path: '.env.local', quiet: true })
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -41,11 +44,7 @@ if (!authUser) {
   if (error) throw error
   authUser = data.user
 } else if (authUser.app_metadata?.booking_access !== 'tester') {
-  const { data, error } = await supabase.auth.admin.updateUserById(authUser.id, {
-    app_metadata: { ...authUser.app_metadata, booking_access: 'tester' },
-  })
-  if (error) throw error
-  authUser = data.user
+  throw new Error('This email already belongs to a non-demo account; use a separate email for the test teacher')
 }
 
 const provisioned = await provisionTestWorkspace({

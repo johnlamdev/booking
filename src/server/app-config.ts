@@ -2,19 +2,19 @@ import 'server-only'
 
 import { normalizeWhatsAppNumber } from '@/lib/whatsapp'
 
-/** 公開註冊預設關閉；日後正式開放時必須明確設定為 true。 */
+/** 公開 Beta 預設開放；部署者仍可明確關閉。 */
 export function isPublicSignupEnabled(): boolean {
-  return process.env.PUBLIC_SIGNUP_ENABLED === 'true'
+  return !isInviteTestingMode() && process.env.PUBLIC_SIGNUP_ENABLED !== 'false'
 }
 
-/** 邀請測試期由管理員處理密碼，忘記／重設密碼預設關閉。 */
+/** 公開 Beta 預設容許自助重設密碼。 */
 export function isPasswordResetEnabled(): boolean {
-  return process.env.PASSWORD_RESET_ENABLED === 'true'
+  return process.env.PASSWORD_RESET_ENABLED !== 'false'
 }
 
-/** 邀請測試期內，由管理員建立的全新帳號會取得版本化體驗資料。 */
+/** 可選的私有邀請模式；不決定一般帳號是否取得測試資料。 */
 export function isInviteTestingMode(): boolean {
-  return process.env.INVITE_TESTING_MODE !== 'false'
+  return process.env.INVITE_TESTING_MODE === 'true'
 }
 
 /** 測試 workspace 的 WhatsApp 一律送往此號碼，不使用畫面上的示範學生號碼。 */

@@ -44,7 +44,7 @@ describe('bootstrapPersonalWorkspace', () => {
   it('首次呼叫建立 user、workspace、OWNER membership 及 instructor profile', async () => {
     const { authUserId, email } = newAuthUser()
 
-    const result = await bootstrapPersonalWorkspace({ authUserId, email })
+    const result = await bootstrapPersonalWorkspace({ authUserId, email, isExperience: true })
 
     expect(result.created).toBe(true)
 
@@ -129,6 +129,19 @@ describe('bootstrapPersonalWorkspace', () => {
     expect(demoExceptions[0]).toMatchObject({ isClosed: true })
   })
 
+  it('一般新帳號不建立測試學生或預約紀錄', async () => {
+    const { authUserId, email } = newAuthUser()
+    const result = await bootstrapPersonalWorkspace({ authUserId, email })
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, result.workspaceId))
+    const studentRows = await db.select().from(students).where(eq(students.workspaceId, result.workspaceId))
+    const bookingRows = await db.select().from(bookingInquiries).where(eq(bookingInquiries.workspaceId, result.workspaceId))
+
+    expect(workspace?.isExperience).toBe(false)
+    expect(workspace?.experienceVersion).toBeNull()
+    expect(studentRows).toHaveLength(0)
+    expect(bookingRows).toHaveLength(0)
+  })
+
   it('重複呼叫不會產生第二個 workspace（規格 §14.1）', async () => {
     const { authUserId, email } = newAuthUser()
 
@@ -163,7 +176,7 @@ describe('bootstrapPersonalWorkspace', () => {
 
   it('預先建立固定資料後，併發首次登入只會建立一份相對日期資料', async () => {
     const { authUserId, email } = newAuthUser()
-    const result = await bootstrapPersonalWorkspace({ authUserId, email })
+    const result = await bootstrapPersonalWorkspace({ authUserId, email, isExperience: true })
 
     // 模擬管理員已預先建立 workspace／學生，但老師尚未首次登入。
     await db.delete(bookingInquiries).where(eq(bookingInquiries.workspaceId, result.workspaceId))

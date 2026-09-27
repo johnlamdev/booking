@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { requireAuthUser } from '@/server/auth/dal'
-import { getTestWhatsAppOverride, isInviteTestingMode } from '@/server/app-config'
+import { getTestWhatsAppOverride, isPublicSignupEnabled } from '@/server/app-config'
 import { db } from '@/server/db'
 import { instructorProfiles, users, workspaceMembers, workspaces } from '@/server/db/schema'
 
@@ -132,15 +132,16 @@ export const requireWorkspaceContext = cache(async (): Promise<WorkspaceContext>
     redirect('/access-disabled')
   }
 
-  // 公開註冊關閉期間，只有由管理員寫入 app_metadata 的受邀測試帳號可初始化。
+  // 關閉公開註冊時，只有由管理員寫入 app_metadata 的受邀測試帳號可初始化。
   // 使用者不能自行修改 app_metadata，因此直接呼叫 Supabase signUp 也無法繞過。
-  if (isInviteTestingMode() && authUser.bookingAccess !== 'tester') {
+  if (!isPublicSignupEnabled() && authUser.bookingAccess !== 'tester') {
     redirect('/access-disabled?reason=invite-only')
   }
 
   await bootstrapPersonalWorkspace({
     authUserId: authUser.authUserId,
     email: authUser.email,
+    isExperience: authUser.bookingAccess === 'tester',
   })
 
   const created = await loadWorkspaceContext(authUser.authUserId)

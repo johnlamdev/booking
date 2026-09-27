@@ -54,9 +54,11 @@ export async function provisionTestWorkspace({ databaseUrl, authUserId, email })
         select
           u.id as user_id,
           wm.workspace_id,
-          ip.id as instructor_id
+          ip.id as instructor_id,
+          w.is_experience
         from users u
         join workspace_members wm on wm.user_id = u.id
+        join workspaces w on w.id = wm.workspace_id
         join instructor_profiles ip on ip.workspace_id = wm.workspace_id and ip.is_active = true
         where u.auth_user_id = ${authUserId}
           and wm.role = 'OWNER'
@@ -65,6 +67,9 @@ export async function provisionTestWorkspace({ databaseUrl, authUserId, email })
       `
 
       let context = existing[0]
+      if (context && !context.is_experience) {
+        throw new Error('Refusing to add demo students to a normal workspace')
+      }
       let createdWorkspace = false
 
       if (!context) {

@@ -7,7 +7,6 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { generateRandomSlug } from '@/lib/slug'
 import { generateIdempotencyKey, generateStatusToken, hashStatusToken } from '@/lib/token'
 import { zonedWallClockToUtc } from '@/lib/time'
-import { isInviteTestingMode } from '@/server/app-config'
 import { db } from '@/server/db'
 import {
   availabilityRules,
@@ -363,11 +362,12 @@ export async function initializeExperienceWorkspace(params: {
 export async function bootstrapPersonalWorkspace(params: {
   authUserId: string
   email: string
+  isExperience?: boolean
 }): Promise<BootstrapResult> {
   const { authUserId, email } = params
 
   return db.transaction(async (tx) => {
-    const experienceMode = isInviteTestingMode()
+    const experienceMode = params.isExperience === true
     const experienceStartedAt = new Date()
     // 同一 auth user 的併發 bootstrap 在此排隊
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${authUserId}, 0))`)

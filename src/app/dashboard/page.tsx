@@ -106,6 +106,18 @@ export default async function DashboardPage() {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">你好，{ctx.displayName}</h1>
       </div>
 
+      {!ctx.isExperience && !hasCustomSlug && (
+        <Card className="border-brand/20 bg-brand-soft/60">
+          <h2 className="text-lg font-semibold text-ink">歡迎使用約課易，先完成你的預約頁</h2>
+          <p className="mt-2 text-sm text-ink-muted">系統已準備示例課堂種類和開放時間；分享前請按自己的安排檢查並修改。你的帳號沒有測試學生或預約紀錄。</p>
+          <ol className="mt-3 list-inside list-decimal space-y-1 text-sm text-ink">
+            <li><Link href="/dashboard/settings/profile" className="font-medium text-brand underline">填寫老師資料和自訂網址</Link></li>
+            <li><Link href="/dashboard/services" className="font-medium text-brand underline">檢查課堂種類</Link>與 <Link href="/dashboard/availability/settings" className="font-medium text-brand underline">開放時間</Link></li>
+            <li><Link href="/dashboard/settings/share" className="font-medium text-brand underline">預覽並分享預約頁</Link></li>
+          </ol>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-[1.25fr_0.75fr]">
         <Card className="border-0 bg-gradient-to-br from-brand-strong to-brand text-white shadow-lg shadow-brand/15">
           <p className="text-sm text-white/75">需要你處理</p>
@@ -148,6 +160,9 @@ export default async function DashboardPage() {
           <Link href={`/dashboard/availability?view=week&date=${today}`} className="text-sm font-medium text-brand">查看週曆</Link>
         </div>
         <Card className="overflow-hidden p-0">
+          {pendingCount === 0 && daySummaries.every((day) => day.confirmedCount === 0) && (
+            <p className="border-b border-line px-4 py-4 text-sm text-ink-muted sm:px-5">未來 7 天沒有查詢或已確認課堂。分享預約頁後，學生提交的查詢會顯示在收件匣。</p>
+          )}
           <ul className="divide-y divide-line">
             {daySummaries.map((day, index) => {
               const isUnavailable = day.state !== 'OPEN'
