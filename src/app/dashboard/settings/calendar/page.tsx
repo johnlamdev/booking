@@ -14,6 +14,7 @@ export default async function CalendarSettingsPage({ searchParams }: { searchPar
     <Link href="/dashboard/more" className="text-sm text-brand">← 返回更多設定</Link>
     <h1 className="text-2xl font-semibold text-ink">Google Calendar</h1>
     <p className="text-sm text-ink-muted">請連接你自己的 Google 帳號。連接後，已確認的課堂會加入該帳號的主要日曆；改期會更新時間，取消會移除。待確認查詢不會加入日曆。</p>
+    <p className="text-xs text-ink-muted">約課易只管理自己建立的課堂事件；不會讀取你其他日曆安排或在事件加入學生聯絡資料。連接前可查看<Link href="/privacy" className="ml-1 text-brand underline">私隱政策</Link>。</p>
     {query.result === 'connected' && <p className="rounded-xl bg-brand-soft p-3 text-sm text-brand-strong">已連接 Google Calendar。</p>}
     {(query.error || (query.result && query.result !== 'connected')) && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">連接未完成，請重新嘗試；如持續失敗，請聯絡網站管理員。</p>}
     {!configured ? <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">此網站尚未設定 Google Calendar 連接。預約功能仍可正常使用。</p>

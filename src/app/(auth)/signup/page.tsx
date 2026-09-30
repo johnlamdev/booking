@@ -26,6 +26,7 @@ export default function SignupPage() {
       <h1 className="mb-1 text-xl font-semibold text-ink">建立帳號</h1>
       <p className="mb-5 text-sm text-ink-muted">幾分鐘內就可以開始收預約查詢</p>
       <AuthForm mode="signup" action={signupAction} />
+      <p className="mt-5 text-center text-xs leading-5 text-ink-muted">註冊前可先查看<Link href="/privacy" className="mx-1 text-brand underline">私隱政策</Link>及<Link href="/terms" className="ml-1 text-brand underline">使用條款</Link>。</p>
     </>
   )
 }

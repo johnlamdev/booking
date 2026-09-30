@@ -61,6 +61,11 @@ export default function HomePage() {
           ].map(([number, title, copy]) => <div key={number} className="flex gap-4"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-sm font-bold text-brand-strong">{number}</span><div><h2 className="font-semibold text-ink">{title}</h2><p className="mt-1 text-sm leading-6 text-ink-muted">{copy}</p></div></div>)}
         </div>
       </section>
+      <footer className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-2 px-4 py-8 text-sm text-ink-muted">
+        <Link href="/privacy" className="hover:text-ink">私隱政策</Link>
+        <Link href="/terms" className="hover:text-ink">使用條款</Link>
+        <a href="mailto:johnlamhk852@gmail.com" className="hover:text-ink">聯絡我們</a>
+      </footer>
     </main>
   )
 }
