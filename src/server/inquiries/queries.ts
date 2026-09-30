@@ -165,11 +165,13 @@ export async function listUpcomingAppointments(
 }
 
 export type StatusPageView = {
+  bookingId: string
   status: InquiryStatus
   startAt: Date
   endAt: Date
   serviceName: string
   instructorName: string
+  instructorWhatsApp: string | null
   workspaceSlug: string
   timezone: string
   rejectionReason: string | null
@@ -205,11 +207,13 @@ export async function getInquiryByStatusToken(token: string): Promise<StatusPage
 
   const [row] = await db
     .select({
+      bookingId: bookingInquiries.id,
       status: bookingInquiries.status,
       startAt: bookingInquiries.startAt,
       endAt: bookingInquiries.endAt,
       serviceName: services.name,
       instructorName: instructorProfiles.displayName,
+      instructorWhatsApp: instructorProfiles.contactPhone,
       workspaceSlug: workspaces.slug,
       timezone: workspaces.timezone,
       rejectionReason: bookingInquiries.rejectionReason,

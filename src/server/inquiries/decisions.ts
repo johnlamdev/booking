@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { and, eq } from 'drizzle-orm'
 
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
+import { syncGoogleCalendarBookingSafely } from '@/server/calendar/google'
 import { db } from '@/server/db'
 import { bookingInquiries } from '@/server/db/schema'
 import { requireWorkspaceContext, type WorkspaceContext } from '@/server/workspace/context'
@@ -73,6 +74,7 @@ export async function confirmInquiryAction(
   if (!result.ok) return { error: result.error }
 
   revalidate()
+  await syncGoogleCalendarBookingSafely(inquiryId)
 
   const whatsappMessage = String(formData.get('whatsappMessage') ?? '').trim().slice(0, 1000)
   const whatsappUrl = await getWhatsAppRedirectUrl(ctx, inquiryId, whatsappMessage)
@@ -138,5 +140,6 @@ export async function cancelInquiryAction(formData: FormData): Promise<DecisionS
   if (!result.ok) return { error: result.error }
 
   revalidate()
+  await syncGoogleCalendarBookingSafely(inquiryId)
   return { success: '預約已取消，原本的時間已重新開放。請自行通知學生。', outcome: 'CANCELLED' }
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 import { Card } from '@/components/ui'
+import { getGoogleCalendarConnectionStatus } from '@/server/calendar/google'
 import { getDashboardOverview } from '@/server/dashboard/queries'
 import { requireWorkspaceContext } from '@/server/workspace/context'
 
@@ -42,14 +43,14 @@ export default async function DashboardPage() {
   const ctx = await requireWorkspaceContext()
 
   const today = todayInZone(ctx.timezone)
-  const overview = await getDashboardOverview({
+  const [overview, googleCalendar] = await Promise.all([getDashboardOverview({
     workspaceId: ctx.workspaceId,
     instructorId: ctx.instructorProfileId,
     timeZone: ctx.timezone,
     fromDate: today,
     slotIntervalMinutes: ctx.slotIntervalMinutes,
     minNoticeMinutes: ctx.minNoticeMinutes,
-  })
+  }), getGoogleCalendarConnectionStatus(ctx.workspaceId)])
   const { activeServiceCount, openWeekdays, pendingCount, daySummaries } = overview
 
   // 隨機 slug 以 t- 開頭，代表老師尚未自訂
@@ -106,6 +107,14 @@ export default async function DashboardPage() {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">你好，{ctx.displayName}</h1>
       </div>
 
+      {googleCalendar.connected && googleCalendar.lastSyncError && (
+        <Card className="border-red-200 bg-red-50">
+          <p className="text-sm font-semibold text-red-800">Google Calendar 最近一次同步未完成</p>
+          <p className="mt-1 text-sm text-red-700">課堂在約課易已生效，但日曆可能未更新。請到 Google Calendar 設定頁重新同步。</p>
+          <Link href="/dashboard/settings/calendar" className="mt-2 inline-flex min-h-10 items-center text-sm font-semibold text-red-800 underline">檢查同步 →</Link>
+        </Card>
+      )}
+
       {!ctx.isExperience && !hasCustomSlug && (
         <Card className="border-brand/20 bg-brand-soft/60">
           <h2 className="text-lg font-semibold text-ink">歡迎使用約課易，先完成你的預約頁</h2>
@@ -141,7 +150,7 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="mt-5 flex gap-2">
-            <Link href={publicPath} className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-line px-3 text-sm font-semibold text-ink">
+            <Link href={ctx.isPublic ? publicPath : `${publicPath}?preview=1`} className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-line px-3 text-sm font-semibold text-ink">
               預覽
             </Link>
             <Link href="/dashboard/settings/share" className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-brand-soft px-3 text-sm font-semibold text-brand-strong">
@@ -150,6 +159,13 @@ export default async function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      {ctx.isPublic && (
+        <Card className="border-amber-300 bg-amber-50">
+          <p className="text-sm font-semibold text-amber-950">學生可用 WhatsApp 通知你新查詢</p>
+          <p className="mt-1 text-sm text-amber-900">學生需要在 WhatsApp 親自按「傳送」；即使未收到訊息，也請定期查看「預約查詢」。</p>
+        </Card>
+      )}
 
       <section aria-labelledby="upcoming-heading">
         <div className="mb-3 flex items-center justify-between">

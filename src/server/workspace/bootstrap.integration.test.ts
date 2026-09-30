@@ -137,6 +137,7 @@ describe('bootstrapPersonalWorkspace', () => {
     const bookingRows = await db.select().from(bookingInquiries).where(eq(bookingInquiries.workspaceId, result.workspaceId))
 
     expect(workspace?.isExperience).toBe(false)
+    expect(workspace?.isPublic).toBe(false)
     expect(workspace?.experienceVersion).toBeNull()
     expect(studentRows).toHaveLength(0)
     expect(bookingRows).toHaveLength(0)

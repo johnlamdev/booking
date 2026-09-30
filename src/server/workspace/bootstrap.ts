@@ -429,8 +429,8 @@ export async function bootstrapPersonalWorkspace(params: {
         slug,
         timezone: DEFAULT_TIMEZONE,
         type: 'PERSONAL',
-        // 預設服務與開放時間會在同一 transaction 建立，因此可立即分享。
-        isPublic: true,
+        // 正式老師先檢查示例課堂和時間，再自行發佈；體驗帳號保留即開即用。
+        isPublic: experienceMode,
         isExperience: experienceMode,
         experienceVersion: experienceMode ? EXPERIENCE_VERSION : null,
         experienceStartedAt: null,

@@ -408,6 +408,42 @@ export const inquiryStatusEvents = pgTable(
   (t) => [index('inquiry_status_events_inquiry_idx').on(t.bookingInquiryId, t.createdAt)],
 )
 
+/** 已確認課堂的改期提案；原時段在對方接受前繼續保留。 */
+export const rescheduleStatusEnum = pgEnum('reschedule_status', ['PENDING', 'ACCEPTED', 'DECLINED'])
+export const rescheduleInitiatorEnum = pgEnum('reschedule_initiator', ['STUDENT', 'INSTRUCTOR'])
+
+export const rescheduleProposals = pgTable(
+  'reschedule_proposals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    bookingInquiryId: uuid('booking_inquiry_id').notNull()
+      .references(() => bookingInquiries.id, { onDelete: 'cascade' }),
+    proposedStartAt: timestamp('proposed_start_at', { withTimezone: true }).notNull(),
+    proposedEndAt: timestamp('proposed_end_at', { withTimezone: true }).notNull(),
+    initiatedBy: rescheduleInitiatorEnum('initiated_by').notNull(),
+    status: rescheduleStatusEnum('status').notNull().default('PENDING'),
+    /** 老師提出改期時，把這個連結傳給學生；明文 token 不會儲存。 */
+    responseTokenHash: text('response_token_hash').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  },
+  (t) => [
+    check('reschedule_proposals_end_after_start', sql`${t.proposedEndAt} > ${t.proposedStartAt}`),
+    uniqueIndex('reschedule_one_pending_per_booking').on(t.bookingInquiryId)
+      .where(sql`${t.status} = 'PENDING'`),
+    index('reschedule_proposals_booking_idx').on(t.bookingInquiryId, t.createdAt),
+  ],
+)
+
+/** 可選 Google Calendar 連接。Refresh token 用應用程式密鑰加密後才入庫。 */
+export const googleCalendarConnections = pgTable('google_calendar_connections', {
+  workspaceId: uuid('workspace_id').primaryKey().references(() => workspaces.id, { onDelete: 'cascade' }),
+  refreshTokenEncrypted: text('refresh_token_encrypted').notNull(),
+  calendarId: text('calendar_id').notNull().default('primary'),
+  lastSyncError: text('last_sync_error'),
+  ...timestamps,
+})
+
 /**
  * 公開 endpoint 的限流計數。
  *

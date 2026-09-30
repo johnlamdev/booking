@@ -16,6 +16,7 @@ export function PublishToggle({ isPublic, canPublish, publicUrl }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [confirmingUnpublish, setConfirmingUnpublish] = useState(false)
+  const [reviewed, setReviewed] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   function toggle(next: boolean) {
@@ -63,9 +64,15 @@ export function PublishToggle({ isPublic, canPublish, publicUrl }: Props) {
             取消發佈
           </Button>
         ) : (
-          <Button type="button" onClick={() => toggle(true)} disabled={!canPublish || isPending}>
-            {isPending ? '發佈中…' : '發佈'}
-          </Button>
+          <div className="flex flex-col gap-3">
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input type="checkbox" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} className="mt-1" />
+              <span>我已檢查公開資料、課堂和開放時間，準備讓學生提交查詢。</span>
+            </label>
+            <Button type="button" onClick={() => toggle(true)} disabled={!canPublish || !reviewed || isPending}>
+              {isPending ? '發佈中…' : '發佈預約頁'}
+            </Button>
+          </div>
         )}
       </div>
 

@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { InquiryDecision } from '@/components/inquiry-decision'
 import { InquiryCancellation } from '@/components/inquiry-cancellation'
+import { TeacherRescheduleResponse } from '@/components/teacher-reschedule-response'
 import { WhatsAppComposer } from '@/components/whatsapp-composer'
 import { Alert, Card } from '@/components/ui'
 import { formatDateInZone, formatInZone, formatTimeRangeInZone } from '@/lib/time'
@@ -11,6 +12,7 @@ import { normalizeStudentPhone } from '@/lib/student-identity'
 import { listUpcomingExceptions } from '@/server/availability/queries'
 import { getInquiryConflictSummaries, type InquiryConflictSummary } from '@/server/public/queries'
 import { listInquiries, type InquiryStatus } from '@/server/inquiries/queries'
+import { listPendingReschedulesForBookings } from '@/server/inquiries/reschedule'
 import { requireWorkspaceContext } from '@/server/workspace/context'
 
 export const metadata: Metadata = { title: '預約查詢' }
@@ -74,6 +76,8 @@ export default async function InquiriesPage({ searchParams }: PageProps<'/dashbo
     instructorId: ctx.instructorProfileId,
     inquiries,
   })
+  const pendingReschedules = await listPendingReschedulesForBookings(inquiries.map((item) => item.id))
+  const rescheduleByBooking = new Map(pendingReschedules.map((item) => [item.bookingInquiryId, item]))
 
   return (
     <div className="flex flex-col gap-5">
@@ -138,7 +142,7 @@ export default async function InquiriesPage({ searchParams }: PageProps<'/dashbo
               <p className="mt-1 text-xs text-ink-muted">分享預約頁後，學生提交的查詢會顯示在這裡。</p>
               <div className="mt-4 flex justify-center gap-2">
                 <Link href="/dashboard/settings/share" className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">分享預約頁</Link>
-                <Link href={`/book/${ctx.workspaceSlug}`} className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-ink">預覽學生頁</Link>
+                <Link href={`/book/${ctx.workspaceSlug}?preview=1`} className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-ink">預覽學生頁</Link>
               </div>
             </>
           )}
@@ -146,6 +150,7 @@ export default async function InquiriesPage({ searchParams }: PageProps<'/dashbo
       ) : (
         <ul className="flex flex-col gap-3">
           {inquiries.map((inquiry) => {
+            const reschedule = rescheduleByBooking.get(inquiry.id)
             const conflict = conflictSummaries[inquiry.id] ?? NO_CONFLICT
             const dateLabel = formatDateInZone(inquiry.startAt, ctx.timezone)
             const inquiryDate = formatInZone(inquiry.startAt, ctx.timezone, 'yyyy-MM-dd')
@@ -179,7 +184,7 @@ export default async function InquiriesPage({ searchParams }: PageProps<'/dashbo
               `${inquiry.serviceName}`,
               `${fullTimeLabel}（${timezoneLabel}）`,
               '',
-              `抱歉造成不便，請回覆此訊息再安排其他時間。`,
+              `如需再安排時間，請回覆此訊息。`,
             ].join('\n')
             const pendingMessage = [
               `${inquiry.studentName} 你好，`,
@@ -320,6 +325,12 @@ export default async function InquiriesPage({ searchParams }: PageProps<'/dashbo
 
                   {inquiry.status === 'CONFIRMED' && !inquiry.isPast && (
                     <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3">
+                      {reschedule?.initiatedBy === 'STUDENT' ? <div className="rounded-xl border border-brand/30 bg-brand-soft p-4">
+                        <p className="text-sm font-semibold text-ink">學生提出改期：{formatInZone(reschedule.proposedStartAt, ctx.timezone, 'yyyy年M月d日 EEEE HH:mm')}</p>
+                        <p className="mt-1 text-xs text-ink-muted">接受前原本課堂仍然保留。請在這裡決定，再用 WhatsApp 通知學生。</p>
+                        <TeacherRescheduleResponse proposalId={reschedule.id} />
+                      </div> : reschedule ? <div className="space-y-2"><p className="text-sm text-ink-muted">已向學生提出改期，等待回覆。</p><Link href={`/dashboard/inquiries/${inquiry.id}/reschedule`} className="inline-flex min-h-10 items-center text-sm font-semibold text-brand underline">查看或撤回提案</Link></div>
+                        : <Link href={`/dashboard/inquiries/${inquiry.id}/reschedule`} className="inline-flex min-h-11 w-fit items-center rounded-xl border border-brand/30 px-4 text-sm font-semibold text-brand-strong">提出改期 →</Link>}
                       {!isClosedDay && (
                         <WhatsAppComposer phone={deliveryPhone} message={confirmationMessage} label="WhatsApp 傳送確認" testMode={ctx.isExperience} />
                       )}

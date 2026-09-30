@@ -115,7 +115,7 @@ export function ProfileForm({ initial, publicUrlBase }: Props) {
       <fieldset className="flex flex-col gap-4 rounded-lg border border-line p-4">
         <legend className="px-1 text-sm font-medium text-ink">公開聯絡方式</legend>
         <p className="text-xs text-ink-subtle">
-          選填。填寫後才會在公開頁顯示，方便學生在沒有合適時段時直接聯絡你。
+          WhatsApp 號碼用於讓學生提交查詢後直接傳訊息給你。請填可接收 WhatsApp 的號碼，連國家／地區號碼。聯絡電郵可選填。
         </p>
 
         <Field
@@ -128,12 +128,13 @@ export function ProfileForm({ initial, publicUrlBase }: Props) {
         />
 
         <Field
-          label="聯絡電話 / WhatsApp"
+          label="老師 WhatsApp 號碼"
           name="contactPhone"
           type="tel"
           inputMode="tel"
           maxLength={40}
           defaultValue={initial.contactPhone}
+          hint="例如 +852 9123 4567；發佈預約頁前必須填寫"
           disabled={isPending}
         />
       </fieldset>

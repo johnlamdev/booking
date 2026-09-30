@@ -1,10 +1,10 @@
 import 'server-only'
 
-import { and, eq, ne, sql } from 'drizzle-orm'
+import { and, eq, gt, ne, sql } from 'drizzle-orm'
 import { formatInTimeZone } from 'date-fns-tz'
 
 import { db } from '@/server/db'
-import { availabilityExceptions, bookingInquiries, inquiryStatusEvents, workspaces } from '@/server/db/schema'
+import { availabilityExceptions, bookingInquiries, inquiryStatusEvents, rescheduleProposals, workspaces } from '@/server/db/schema'
 
 /**
  * 確認 / 拒絕查詢的核心邏輯。
@@ -231,23 +231,52 @@ export async function cancelConfirmedInquiry(params: {
   inquiryId: string
   reason: string | null
 }): Promise<DecisionResult> {
-  const { workspaceId, userId, inquiryId, reason } = params
+  return cancelConfirmedBooking({ ...params, actorType: 'USER' })
+}
+
+export async function cancelConfirmedInquiryByStudent(params: {
+  inquiryId: string
+  statusTokenHash: string
+  reason: string | null
+}): Promise<DecisionResult> {
+  return cancelConfirmedBooking({ ...params, actorType: 'STUDENT' })
+}
+
+async function cancelConfirmedBooking(params:
+  | { actorType: 'USER'; workspaceId: string; userId: string; inquiryId: string; reason: string | null }
+  | { actorType: 'STUDENT'; statusTokenHash: string; inquiryId: string; reason: string | null },
+): Promise<DecisionResult> {
+  const { inquiryId, reason } = params
   const now = new Date()
 
   return db.transaction(async (tx) => {
+    const [target] = await tx.select({ instructorId: bookingInquiries.instructorId })
+      .from(bookingInquiries)
+      .where(and(
+        eq(bookingInquiries.id, inquiryId),
+        params.actorType === 'USER'
+          ? eq(bookingInquiries.workspaceId, params.workspaceId)
+          : eq(bookingInquiries.statusTokenHash, params.statusTokenHash),
+      )).limit(1)
+    if (!target) return { ok: false as const, error: '找不到這筆預約。' }
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${target.instructorId}, 0))`)
+
     const updated = await tx
       .update(bookingInquiries)
       .set({
         status: 'CANCELLED',
         cancellationReason: reason,
         cancelledAt: now,
-        cancelledByUserId: userId,
+        cancelledByUserId: params.actorType === 'USER' ? params.userId : null,
       })
       .where(
         and(
           eq(bookingInquiries.id, inquiryId),
-          eq(bookingInquiries.workspaceId, workspaceId),
+          params.actorType === 'USER'
+            ? eq(bookingInquiries.workspaceId, params.workspaceId)
+            : eq(bookingInquiries.statusTokenHash, params.statusTokenHash),
           eq(bookingInquiries.status, 'CONFIRMED'),
+          gt(bookingInquiries.startAt, now),
         ),
       )
       .returning({ id: bookingInquiries.id })
@@ -260,10 +289,17 @@ export async function cancelConfirmedInquiry(params: {
       bookingInquiryId: inquiryId,
       fromStatus: 'CONFIRMED',
       toStatus: 'CANCELLED',
-      actorType: 'USER',
-      actorUserId: userId,
+      actorType: params.actorType,
+      actorUserId: params.actorType === 'USER' ? params.userId : null,
       reason,
     })
+
+    await tx.update(rescheduleProposals)
+      .set({ status: 'DECLINED', resolvedAt: now })
+      .where(and(
+        eq(rescheduleProposals.bookingInquiryId, inquiryId),
+        eq(rescheduleProposals.status, 'PENDING'),
+      ))
 
     return { ok: true as const, conflictCount: 0 }
   })

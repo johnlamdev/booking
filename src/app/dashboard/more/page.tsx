@@ -9,6 +9,7 @@ const ITEMS = [
   { href: '/dashboard/services', title: '服務', description: '管理課堂名稱、內容及長度', icon: '▦' },
   { href: '/dashboard/settings/profile', title: '公開資料', description: '更新學生看到的名稱、簡介及聯絡方式', icon: '◎' },
   { href: '/dashboard/settings/share', title: '分享與發佈', description: '預覽、發佈及分享你的預約頁', icon: '↗' },
+  { href: '/dashboard/settings/calendar', title: 'Google Calendar', description: '把已確認課堂同步到日曆', icon: '▦' },
 ] as const
 
 export default async function MorePage() {

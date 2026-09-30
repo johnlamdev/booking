@@ -6,19 +6,31 @@ import { PublicSlotPicker, type PublicSlotDay } from '@/components/public-slot-p
 import { Card } from '@/components/ui'
 import { groupSlotsByDate, WEEKDAY_LABELS } from '@/lib/availability'
 import { formatInZone, formatTimeInZone } from '@/lib/time'
+import { getAuthUser } from '@/server/auth/dal'
 import {
   getAvailableSlots,
   getPublicServices,
   getPublishedProfile,
+  getWorkspacePreviewProfile,
 } from '@/server/public/queries'
+import { loadWorkspaceContext } from '@/server/workspace/context'
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<'/book/[workspaceSlug]'>): Promise<Metadata> {
   const { workspaceSlug } = await params
-  const profile = await getPublishedProfile(workspaceSlug)
+  const query = await searchParams
+  let profile = await getPublishedProfile(workspaceSlug)
+  if (query.preview === '1') {
+    const user = await getAuthUser()
+    const ctx = user ? await loadWorkspaceContext(user.authUserId) : null
+    profile = ctx?.workspaceSlug === workspaceSlug.toLowerCase()
+      ? await getWorkspacePreviewProfile(ctx.workspaceId)
+      : null
+  }
 
-  return { title: profile ? `預約 ${profile.displayName}` : '找不到頁面' }
+  return { title: profile ? `${query.preview === '1' ? '預覽' : '預約'} ${profile.displayName}` : '找不到頁面', robots: query.preview === '1' ? { index: false, follow: false } : undefined }
 }
 
 export default async function PublicBookingPage({
@@ -28,7 +40,14 @@ export default async function PublicBookingPage({
   const { workspaceSlug } = await params
   const query = await searchParams
 
-  const profile = await getPublishedProfile(workspaceSlug)
+  const preview = query.preview === '1'
+  let profile = await getPublishedProfile(workspaceSlug)
+  if (preview) {
+    const user = await getAuthUser()
+    const ctx = user ? await loadWorkspaceContext(user.authUserId) : null
+    if (!ctx || ctx.workspaceSlug !== workspaceSlug.toLowerCase()) notFound()
+    profile = await getWorkspacePreviewProfile(ctx.workspaceId)
+  }
   // 未發佈或不存在一律顯示一般化 404，不透露該 slug 是否已被使用
   if (!profile) notFound()
 
@@ -75,6 +94,12 @@ export default async function PublicBookingPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-10">
+      {preview && (
+        <div className="mb-5 rounded-xl border border-brand/30 bg-brand-soft p-4 text-sm text-brand-strong">
+          <strong>老師預覽模式</strong>：只有你登入後可看見。這裡不能提交查詢；請在分享設定確認發佈狀態。
+          <Link href="/dashboard/settings/share" className="ml-2 font-semibold underline">返回分享設定</Link>
+        </div>
+      )}
       <header className="mb-5">
         <div className="flex items-center gap-3">
           <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-strong to-brand text-base font-bold text-white shadow-sm">
@@ -82,7 +107,7 @@ export default async function PublicBookingPage({
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-ink">{profile.displayName}</h1>
-            <p className="mt-0.5 text-xs font-semibold text-brand">✓ 已發佈預約頁</p>
+            <p className="mt-0.5 text-xs font-semibold text-brand">{preview ? '老師預覽' : '✓ 已發佈預約頁'}</p>
           </div>
         </div>
         {profile.bio && <p className="mt-4 whitespace-pre-line text-sm leading-6 text-ink-muted">{profile.bio}</p>}
@@ -114,7 +139,7 @@ export default async function PublicBookingPage({
                 return (
                   <li key={service.id}>
                     <Link
-                      href={`/book/${profile.slug}?service=${service.id}`}
+                      href={`/book/${profile.slug}?service=${service.id}${preview ? '&preview=1' : ''}`}
                       aria-current={isSelected ? 'true' : undefined}
                       className={`block rounded-2xl border p-4 transition-colors ${
                         isSelected
@@ -164,7 +189,7 @@ export default async function PublicBookingPage({
                 )}
               </Card>
             ) : (
-              <PublicSlotPicker days={pickerDays} slug={profile.slug} serviceId={selected!.id} noticeText={noticeText} />
+              <PublicSlotPicker days={pickerDays} slug={profile.slug} serviceId={selected!.id} noticeText={noticeText} preview={preview} />
             )}
           </section>
         </>

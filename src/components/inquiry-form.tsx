@@ -95,7 +95,7 @@ export function InquiryForm({ slug, serviceId, startIso, idempotencyKey }: Props
       </Button>
 
       <p className="text-center text-xs text-ink-subtle">
-        提交後仍需老師確認，這一步並不代表預約成功。
+        提交後請在下一頁用 WhatsApp 通知老師；老師確認後預約才正式成立。
       </p>
     </form>
   )

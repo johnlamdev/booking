@@ -3,8 +3,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { StatusLinkActions } from '@/components/status-link-actions'
+import { StudentBookingCancellation } from '@/components/student-booking-cancellation'
 import { Card } from '@/components/ui'
 import { formatDateInZone, formatTimeRangeInZone } from '@/lib/time'
+import { buildWhatsAppUrl } from '@/lib/whatsapp'
 import { getInquiryByStatusToken, type InquiryStatus } from '@/server/inquiries/queries'
 
 export const metadata: Metadata = { title: '查詢狀態' }
@@ -16,7 +18,7 @@ const STATUS_COPY: Record<
 > = {
   PENDING: {
     label: '等待老師確認',
-    detail: '你的查詢已送出，老師確認後才算預約成功。',
+    detail: '你的查詢已送出，老師確認後才算預約成功。請在下方開啟 WhatsApp 通知老師，並保存狀態連結。',
     tone: 'pending',
   },
   CONFIRMED: {
@@ -40,8 +42,8 @@ const STATUS_COPY: Record<
     tone: 'bad',
   },
   CANCELLED: {
-    label: '老師已取消這次預約',
-    detail: '原本的時段已經取消，你可以重新選擇其他時間。',
+    label: '這次預約已取消',
+    detail: '原本的時段已重新開放。如需上課，可以選擇其他時間。',
     tone: 'bad',
   },
 }
@@ -64,6 +66,11 @@ export default async function InquiryStatusPage({
   const copy = STATUS_COPY[inquiry.status]
   const timezoneLabel = inquiry.timezone === 'Asia/Hong_Kong' ? '香港時間' : inquiry.timezone
   const shouldChooseAgain = ['REJECTED', 'REJECTED_CONFLICT', 'EXPIRED', 'CANCELLED'].includes(inquiry.status)
+  const statusUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/inquiry/status/${token}`
+  const teacherMessage = `你好，我剛在約課易提交了 ${formatDateInZone(inquiry.startAt, inquiry.timezone)} ${formatTimeRangeInZone(inquiry.startAt, inquiry.endAt, inquiry.timezone)} 的「${inquiry.serviceName}」預約查詢。請查看並回覆我：${statusUrl}`
+  const teacherWhatsAppUrl = inquiry.status === 'PENDING'
+    ? buildWhatsAppUrl(inquiry.instructorWhatsApp ?? '', teacherMessage)
+    : null
 
   return (
     <main className="mx-auto w-full max-w-lg flex-1 px-4 py-8">
@@ -110,6 +117,9 @@ export default async function InquiryStatusPage({
         </dl>
       </Card>
 
+      {inquiry.status === 'CONFIRMED' && inquiry.startAt > new Date() && <Link href={`/inquiry/status/${token}/reschedule`} className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-brand/30 px-4 text-sm font-semibold text-brand-strong">想改時間？查看老師空檔 →</Link>}
+      {inquiry.status === 'CONFIRMED' && inquiry.startAt > new Date() && <StudentBookingCancellation token={token} />}
+
       {inquiry.status === 'REJECTED' && inquiry.rejectionReason && (
         <Card className="mt-4">
           <h2 className="text-sm font-medium text-ink">老師的說明</h2>
@@ -121,10 +131,18 @@ export default async function InquiryStatusPage({
 
       {inquiry.status === 'CANCELLED' && inquiry.cancellationReason && (
         <Card className="mt-4">
-          <h2 className="text-sm font-medium text-ink">老師的取消說明</h2>
+          <h2 className="text-sm font-medium text-ink">取消說明</h2>
           <p className="mt-1 whitespace-pre-line text-sm text-ink-muted">
             {inquiry.cancellationReason}
           </p>
+        </Card>
+      )}
+
+      {teacherWhatsAppUrl && (
+        <Card className="mt-4 border-brand/30 bg-brand-soft">
+          <h2 className="text-sm font-semibold text-ink">用 WhatsApp 通知老師</h2>
+          <p className="mt-1 text-sm text-ink-muted">開啟 WhatsApp 後，請親自按「傳送」。傳送前這筆查詢只會出現在老師的約課易後台。</p>
+          <a href={teacherWhatsAppUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-12 items-center rounded-xl bg-brand px-5 text-sm font-semibold text-white">開啟 WhatsApp，通知老師 →</a>
         </Card>
       )}
 

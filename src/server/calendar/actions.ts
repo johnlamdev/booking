@@ -16,6 +16,7 @@ import {
   students,
 } from '@/server/db/schema'
 import { requireWorkspaceContext } from '@/server/workspace/context'
+import { syncGoogleCalendarBookingSafely } from '@/server/calendar/google'
 
 export type CalendarActionState = {
   error?: string
@@ -93,7 +94,7 @@ export async function createManualBookingAction(
   if (startAt <= new Date()) return { error: '不可新增已經開始或過去的課堂。' }
 
   try {
-    const conflictCount = await db.transaction(async (tx) => {
+    const { conflictCount, createdId } = await db.transaction(async (tx) => {
       const token = generateStatusToken()
       const [created] = await tx
         .insert(bookingInquiries)
@@ -154,10 +155,11 @@ export async function createManualBookingAction(
         )
       }
 
-      return conflicts.length
+      return { conflictCount: conflicts.length, createdId: created.id }
     })
 
     revalidateCalendar()
+    await syncGoogleCalendarBookingSafely(createdId)
     return {
       success:
         conflictCount > 0

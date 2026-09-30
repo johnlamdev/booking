@@ -113,6 +113,20 @@
       "when": 1786834052921,
       "tag": "0015_melodic_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790609127055,
+      "tag": "0016_tough_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790611794529,
+      "tag": "0017_slow_raider",
+      "breakpoints": true
     }
   ]
 }

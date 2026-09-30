@@ -21,11 +21,13 @@ export function PublicSlotPicker({
   slug,
   serviceId,
   noticeText,
+  preview = false,
 }: {
   days: PublicSlotDay[]
   slug: string
   serviceId: string
   noticeText?: string
+  preview?: boolean
 }) {
   const [page, setPage] = useState(0)
   const [selectedDate, setSelectedDate] = useState(days[0]?.date ?? '')
@@ -169,7 +171,9 @@ export function PublicSlotPicker({
               {selectedSlot ? `${selectedDay?.shortDate} · ${selectedSlot.time}` : '請選擇一個時間'}
             </strong>
           </div>
-          {selectedSlot ? (
+          {preview ? (
+            <span aria-disabled="true" className="inline-flex min-h-12 items-center rounded-xl bg-line px-5 text-sm font-semibold text-ink-subtle">預覽模式</span>
+          ) : selectedSlot ? (
             <Link
               href={`/book/${slug}/inquiry?service=${serviceId}&start=${encodeURIComponent(selectedSlot.iso)}`}
               className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-sm"

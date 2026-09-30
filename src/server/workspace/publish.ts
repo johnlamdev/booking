@@ -32,6 +32,9 @@ export async function setPublishStateAction(formData: FormData): Promise<Publish
     if (!readiness.hasSchedule) {
       return { error: '需要先設定每週開放時間才能發佈。' }
     }
+    if (!readiness.hasWhatsApp) {
+      return { error: '請先在公開資料填寫有效的 WhatsApp 號碼，讓學生提交查詢後通知你。' }
+    }
   }
 
   await db

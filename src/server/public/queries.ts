@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { and, asc, eq, gt, gte, inArray, lt } from 'drizzle-orm'
+import { and, asc, eq, gt, gte, inArray, lt, ne } from 'drizzle-orm'
 
 import { deriveAvailableSlots, type DerivedSlot } from '@/lib/availability'
+import { normalizeWhatsAppNumber } from '@/lib/whatsapp'
 import {
   summarizeInquiryConflicts,
   type ConflictInquiry,
@@ -81,6 +82,30 @@ export async function getPublishedProfile(slug: string): Promise<PublicProfile |
   return row ?? null
 }
 
+/** 只供已授權的老師預覽；呼叫端必須先核對 workspace ownership。 */
+export async function getWorkspacePreviewProfile(workspaceId: string): Promise<PublicProfile | null> {
+  const [row] = await db
+    .select({
+      workspaceId: workspaces.id,
+      instructorId: instructorProfiles.id,
+      slug: workspaces.slug,
+      displayName: instructorProfiles.displayName,
+      bio: instructorProfiles.bio,
+      contactEmail: instructorProfiles.contactEmail,
+      contactPhone: instructorProfiles.contactPhone,
+      timezone: workspaces.timezone,
+      slotIntervalMinutes: workspaces.slotIntervalMinutes,
+      minNoticeMinutes: workspaces.minNoticeMinutes,
+      bookingHorizonDays: workspaces.bookingHorizonDays,
+    })
+    .from(workspaces)
+    .innerJoin(instructorProfiles, eq(instructorProfiles.workspaceId, workspaces.id))
+    .where(and(eq(workspaces.id, workspaceId), eq(instructorProfiles.isActive, true)))
+    .limit(1)
+
+  return row ?? null
+}
+
 /** 公開頁可選的服務：只有啟用中的才出現。 */
 export async function getPublicServices(workspaceId: string): Promise<PublicService[]> {
   return db
@@ -115,6 +140,8 @@ export async function getAvailableSlots(params: {
   durationMinutes: number
   fromDate?: string
   days?: number
+  /** 改期時忽略原本這堂課，讓部分重疊的新時段也可供選擇。 */
+  excludeBookingId?: string
 }): Promise<DerivedSlot[]> {
   const { profile, durationMinutes } = params
   const fromDate = params.fromDate ?? todayInZone(profile.timezone)
@@ -154,6 +181,7 @@ export async function getAvailableSlots(params: {
         and(
           eq(bookingInquiries.instructorId, profile.instructorId),
           eq(bookingInquiries.status, 'CONFIRMED'),
+          params.excludeBookingId ? ne(bookingInquiries.id, params.excludeBookingId) : undefined,
           gte(bookingInquiries.endAt, new Date()),
           lt(bookingInquiries.startAt, horizonEnd),
         ),
@@ -206,8 +234,8 @@ export async function hasAnyAvailability(profile: PublicProfile): Promise<boolea
 export async function getPublishReadiness(
   workspaceId: string,
   instructorId: string,
-): Promise<{ hasService: boolean; hasSchedule: boolean }> {
-  const [activeServices, rules] = await Promise.all([
+): Promise<{ hasService: boolean; hasSchedule: boolean; hasWhatsApp: boolean }> {
+  const [activeServices, rules, [profile]] = await Promise.all([
     db
       .select({ id: services.id })
       .from(services)
@@ -218,9 +246,12 @@ export async function getPublishReadiness(
       .from(availabilityRules)
       .where(eq(availabilityRules.instructorId, instructorId))
       .limit(1),
+    db.select({ phone: instructorProfiles.contactPhone }).from(instructorProfiles)
+      .where(and(eq(instructorProfiles.id, instructorId), eq(instructorProfiles.workspaceId, workspaceId))).limit(1),
   ])
 
-  return { hasService: activeServices.length > 0, hasSchedule: rules.length > 0 }
+  const digits = normalizeWhatsAppNumber(profile?.phone)
+  return { hasService: activeServices.length > 0, hasSchedule: rules.length > 0, hasWhatsApp: digits.length >= 8 && digits.length <= 15 }
 }
 
 export type { InquiryConflictSummary } from '@/lib/inquiry-conflicts'
