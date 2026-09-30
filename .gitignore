@@ -44,6 +44,11 @@ yarn-error.log*
 
 # vercel
 .vercel
+.vercelignore
+
+# Local agent instructions; never publish with application source
+/AGENTS.md
+/CLAUDE.md
 
 # typescript
 *.tsbuildinfo
