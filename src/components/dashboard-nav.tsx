@@ -69,7 +69,7 @@ function NavPendingIndicator({ className = '' }: { className?: string }) {
 
 export function DashboardNav() {
   const pathname = usePathname()
-  const isMore = pathname.startsWith('/dashboard/more') || MORE_ITEMS.some((item) => isCurrent(pathname, item.href))
+  const isMore = pathname.startsWith('/dashboard/more') || pathname.startsWith('/dashboard/settings/calendar') || MORE_ITEMS.some((item) => isCurrent(pathname, item.href))
 
   return (
     <>
@@ -92,6 +92,18 @@ export function DashboardNav() {
               </li>
             )
           })}
+          <li>
+            <Link
+              href="/dashboard/more"
+              aria-current={isMore ? 'page' : undefined}
+              className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-medium transition-colors ${
+                isMore ? 'bg-brand-soft text-brand-strong' : 'text-ink-muted hover:bg-canvas hover:text-ink'
+              }`}
+            >
+              更多
+              <NavPendingIndicator />
+            </Link>
+          </li>
         </ul>
       </nav>
 
